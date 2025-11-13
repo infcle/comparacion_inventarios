@@ -20,7 +20,7 @@ def formatearFecha(fecha, mes) :
         return fecha_formateada[3:5]+"/"+fecha_formateada[0:2]+"/"+fecha_formateada[6:10]
     return fecha_formateada
 
-def getArrayListBase(dataFrameDatosBase, mes):
+def getArrayListBase(dataFrameDatosBase, mes, tipo_movimiento):
     """
         Recorre fila a fila el DataFrame y procesa los datos del archivo base.
     
@@ -48,7 +48,7 @@ def getArrayListBase(dataFrameDatosBase, mes):
             importe = fila[16]
             fecha = formatearFecha(fila[5], mes)
             codigo = fila[11]
-            movimiento = fila[8]
+            movimiento = tipo_movimiento
             operacion = fila[7]
 
             item_movimiento = ItemMovimiento.ItemMovimiento(

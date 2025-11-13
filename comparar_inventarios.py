@@ -1,123 +1,136 @@
 """
-Script principal para comparar inventarios.
-Importa funciones de módulos separados para procesar cada tipo de documento.
+    Script principal para comparar inventarios.
+    Importa funciones de módulos separados para procesar cada tipo de documento.
 """
 import pandas as pd
 import procesar_base
 import procesar_kardex
 import metodos
+from datetime import datetime
+import os
+import sys
 
-# --- Rutas de los archivos ---
-base = input("Ingrese la ruta del archivo base: ").strip()
-kardex = input("Ingrese la ruta del archivo kardex kernobi: ").strip()
-mes_comparar = input("Ingrese mes a comparar: ")
+def cargar_excel(path, sheet):
+    try:
+        df = pd.read_excel(path, sheet_name=sheet)
+        print(f"✔ Cargado: {path} (hoja: {sheet}) — filas: {len(df)}")
+        return df
+    except Exception as e:
+        print(f"✖ Error al cargar '{path}' (hoja: '{sheet}'): {e}")
+        sys.exit(1)
 
-# --- Cargar hojas ---
-dataFrameDatosBase = pd.read_excel(base, sheet_name="Hoja1")
-dataFrameDatosKardex = pd.read_excel(kardex, sheet_name="Page 1")
-
-# --- Procesar documentos ---
-# Procesar archivo base
-movimientos_base = procesar_base.getArrayListBase(dataFrameDatosBase, mes_comparar)
-# Procesar archivo kardex
-movimientos_kerno = procesar_kardex.getArrayListMovimientos(dataFrameDatosKardex)
-
-# datos al principio
-print(f"cantidad de elementos base inicio: {len(movimientos_base)}")
-print(f"cantidad de elementos kerno inicio: {len(movimientos_kerno)}")
-
-# Usar listas de trabajo que se van reduciendo dinámicamente
-# Esto permite eliminar elementos ya comparados para evitar comparaciones innecesarias
-movimientos_base_trabajo = movimientos_base.copy()
-movimientos_kerno_trabajo = movimientos_kerno.copy()
-
-# Contador de coincidencias encontradas
-coincidencias_encontradas = 0
-total_comparaciones = 0
-
-# Comparar movimientos de forma eficiente y dinámica
-# Las listas de trabajo se reducen dinámicamente al eliminar coincidencias
-# Esto evita comparar elementos que ya coincidieron (optimización clave)
-print("\nComparando movimientos...")
-
-# Iterar en reversa sobre base para poder eliminar elementos sin afectar índices
-# Al iterar en reversa, cuando eliminamos un elemento en índice i,
-# los elementos en índices < i no se ven afectados
-i = len(movimientos_base_trabajo) - 1
-while i >= 0:
-    # Verificar que aún hay elementos en la lista (puede haber sido vaciada)
-    if len(movimientos_base_trabajo) == 0:
-        break
-        
-    movimiento_base = movimientos_base_trabajo[i]
-    coincidencia_encontrada = False
-    
-    # Buscar coincidencia en kerno (iterar en reversa también)
-    # Al encontrar coincidencia, eliminamos ambos elementos inmediatamente
-    j = len(movimientos_kerno_trabajo) - 1
-    while j >= 0 and not coincidencia_encontrada:
-        # Verificar que aún hay elementos en la lista
-        if len(movimientos_kerno_trabajo) == 0:
+def comparar_listas_vs_kerno(base_list, kerno_list, tipo, contador):
+    """
+    base_list y kerno_list son listas mutables de trabajo (se eliminarán elementos al coincidir).
+    tipo: cadena para mensajes (e.g. "INGRESO" o "SALIDA")
+    contador: dic con 'coincidencias' y 'total_comparaciones' para ser actualizado por referencia.
+    """
+    i = len(base_list) - 1
+    while i >= 0:
+        if len(base_list) == 0:
             break
-            
-        movimiento_kerno = movimientos_kerno_trabajo[j]
-        total_comparaciones += 1
-        
-        # Verificar si coinciden
-        if metodos.verificar_igualdad(movimiento_kerno, movimiento_base):
-            # Coincidencia encontrada: eliminar ambos elementos INMEDIATAMENTE
-            # Esto es la clave de la optimización: evita comparaciones futuras
-            movimientos_kerno_trabajo.pop(j)
-            movimientos_base_trabajo.pop(i)
-            coincidencias_encontradas += 1
-            coincidencia_encontrada = True
-            
-            # Mostrar progreso periódicamente
-            if coincidencias_encontradas % 50 == 0:
-                print(f"  ✓ {coincidencias_encontradas} coincidencias | "
-                    f"Base: {len(movimientos_base_trabajo)} | "
-                    f"Kerno: {len(movimientos_kerno_trabajo)} | "
-                    f"Comparaciones: {total_comparaciones}")
-            # Salir del bucle interno ya que encontramos coincidencia
-            break
-        
-        j -= 1
-    
-    # Decrementar índice para procesar el siguiente elemento base
-    # Si encontramos coincidencia, el elemento en i ya fue eliminado,
-    # así que el siguiente elemento a procesar está en i-1
-    i -= 1
 
-# Las listas de trabajo ahora contienen solo los sobrantes
-movimientos_base = movimientos_base_trabajo
-movimientos_kerno = movimientos_kerno_trabajo
+        item_base = base_list[i]
+        coincidencia_encontrada = False
 
-print(f"\n{'='*60}")
-print("Comparación completada:")
-print(f"  - Coincidencias encontradas: {coincidencias_encontradas}")
-print(f"  - Total comparaciones realizadas: {total_comparaciones}")
-print(f"  - Elementos base sobrantes: {len(movimientos_base)}")
-print(f"  - Elementos kerno sobrantes: {len(movimientos_kerno)}")
-print(f"{'='*60}")
+        j = len(kerno_list) - 1
+        while j >= 0 and not coincidencia_encontrada:
+            if len(kerno_list) == 0:
+                break
 
-# --- Exportar movimientos sobrantes a archivo Excel ---
-if movimientos_base or movimientos_kerno:
-    from datetime import datetime
-    import os
+            item_kerno = kerno_list[j]
+            contador['total_comparaciones'] += 1
 
-    # Generar nombre de archivo con fecha y hora
-    fecha_hora = datetime.now().strftime("%Y%m%d_%H%M%S")
-    nombre_archivo = f"movimientos_sobrantes_{mes_comparar}_{fecha_hora}.xlsx"
+            if metodos.verificar_igualdad(item_kerno, item_base):
+                # eliminar ambos inmediatamente
+                kerno_list.pop(j)
+                base_list.pop(i)
+                contador['coincidencias'] += 1
+                coincidencia_encontrada = True
 
-    # Obtener directorio del archivo base como directorio por defecto
-    directorio_base = os.path.dirname(base) if os.path.dirname(base) else "."
-    ruta_archivo_sobrantes = os.path.join(directorio_base, nombre_archivo)
+                if contador['coincidencias'] % 50 == 0:
+                    print(f"  ✓ {contador['coincidencias']} coincidencias | "
+                          f"{tipo} base sobrantes: {len(base_list)} | "
+                          f"Kerno sobrantes: {len(kerno_list)} | "
+                          f"Comparaciones: {contador['total_comparaciones']}")
+                break
 
-    # Exportar movimientos sobrantes
-    print(f"\nExportando movimientos sobrantes a: {ruta_archivo_sobrantes}")
-    metodos.exportar_movimientos_sobrantes(movimientos_base, movimientos_kerno, ruta_archivo_sobrantes)
-    print(f"✅ Archivo creado exitosamente: {ruta_archivo_sobrantes}")
-    print(f"   - Base sobrantes: {len(movimientos_base)} movimientos")
-    print(f"   - Kerno sobrantes: {len(movimientos_kerno)} movimientos")
-else:
-    print("\n✅ No hay movimientos sobrantes. Todos los movimientos coincidieron.")
+            j -= 1
+
+        i -= 1
+
+def main():
+    # --- Rutas de los archivos ---
+    base_ingresos = input("Ingrese la ruta del archivo INGRESOS base: ").strip()
+    base_salidas = input("Ingrese la ruta del archivo SALIDAS base: ").strip()
+    kardex = input("Ingrese la ruta del archivo kardex kernobi: ").strip()
+    mes_comparar = input("Ingrese mes a comparar: ").strip()
+
+    # --- Cargar hojas (con manejo de errores) ---
+    df_ingresos = cargar_excel(base_ingresos, sheet="Hoja1")
+    df_salidas = cargar_excel(base_salidas, sheet="Hoja1")
+    df_kardex = cargar_excel(kardex, sheet="Page 1")
+
+    # --- Procesar documentos ---
+    movimientos_ingresos_base = procesar_base.getArrayListBase(df_ingresos, mes_comparar, "INGRESO") or []
+    movimientos_salidas_base = procesar_base.getArrayListBase(df_salidas, mes_comparar, "SALIDA") or []
+    movimientos_kerno = procesar_kardex.getArrayListMovimientos(df_kardex) or []
+
+    print(f"\nDatos iniciales:")
+    print(f"  - Ingresos base: {len(movimientos_ingresos_base)}")
+    print(f"  - Salidas base: {len(movimientos_salidas_base)}")
+    print(f"  - Kerno: {len(movimientos_kerno)}")
+
+    # Listas de trabajo (copias)
+    ingresos_trabajo = movimientos_ingresos_base.copy()
+    salidas_trabajo = movimientos_salidas_base.copy()
+    kerno_trabajo = movimientos_kerno.copy()
+
+    contador = {'coincidencias': 0, 'total_comparaciones': 0}
+
+    print("\nComparando movimientos (INGRESOS vs KERNO)...")
+    comparar_listas_vs_kerno(ingresos_trabajo, kerno_trabajo, "INGRESO", contador)
+
+    print("\nComparando movimientos (SALIDAS vs KERNO)...")
+    comparar_listas_vs_kerno(salidas_trabajo, kerno_trabajo, "SALIDA", contador)
+
+    # Resultados finales
+    movimientos_ingresos_base = ingresos_trabajo
+    movimientos_salidas_base = salidas_trabajo
+    movimientos_kerno = kerno_trabajo
+
+    print(f"\n{'='*60}")
+    print("Comparación completada:")
+    print(f"  - Coincidencias encontradas: {contador['coincidencias']}")
+    print(f"  - Total comparaciones realizadas: {contador['total_comparaciones']}")
+    print(f"  - Elementos base sobrantes Ingresos: {len(movimientos_ingresos_base)}")
+    print(f"  - Elementos base sobrantes Salidas: {len(movimientos_salidas_base)}")
+    print(f"  - Elementos kerno sobrantes: {len(movimientos_kerno)}")
+    print(f"{'='*60}")
+
+    # --- Exportar movimientos sobrantes a archivo Excel ---
+    if movimientos_ingresos_base or movimientos_salidas_base or movimientos_kerno:
+        fecha_hora = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_archivo = f"movimientos_sobrantes_{mes_comparar}_{fecha_hora}.xlsx"
+        directorio_base = os.path.dirname(base_ingresos) if os.path.dirname(base_ingresos) else "."
+        ruta_archivo_sobrantes = os.path.join(directorio_base, nombre_archivo)
+
+        print(f"\nExportando movimientos sobrantes a: {ruta_archivo_sobrantes}")
+        try:
+            metodos.exportar_movimientos_sobrantes(
+                movimientos_ingresos_base,
+                movimientos_salidas_base,
+                movimientos_kerno,
+                ruta_archivo_sobrantes
+            )
+            print(f"✅ Archivo creado exitosamente: {ruta_archivo_sobrantes}")
+            print(f"   - Base sobrantes Ingresos: {len(movimientos_ingresos_base)} movimientos")
+            print(f"   - Base sobrantes Salidas: {len(movimientos_salidas_base)} movimientos")
+            print(f"   - Kerno sobrantes: {len(movimientos_kerno)} movimientos")
+        except Exception as e:
+            print(f"✖ Error al exportar: {e}")
+    else:
+        print("\n✅ No hay movimientos sobrantes. Todos los movimientos coincidieron.")
+
+if __name__ == "__main__":
+    main()

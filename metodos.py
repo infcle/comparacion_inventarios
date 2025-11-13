@@ -4,7 +4,9 @@ import pandas as pd
 def comparar_con_unidecode(cadena1, cadena2):
     # 1. Quitar acentos y caracteres especiales (unidecode)
     # 2. Convertir a minúsculas (casefold/lower)
-    return unidecode(cadena1).casefold() == unidecode(cadena2).casefold()
+    if not isinstance(cadena1, str) or not isinstance(cadena2, str):
+        return False
+    return unidecode(cadena1).casefold() == unidecode(cadena2).casefold()    
 
 def verificar_igualdad(
     movimiento_kerno, 
@@ -73,12 +75,13 @@ def convertir_movimientos_a_dataframe(movimientos):
     
     return pd.DataFrame(datos)
 
-def exportar_movimientos_sobrantes(movimientos_base, movimientos_kerno, ruta_archivo):
+def exportar_movimientos_sobrantes(movimientos_ingresos_base, movimientos_salidas_base, movimientos_kerno, ruta_archivo):
     """
     Exporta los movimientos sobrantes (no coincidentes) a un archivo Excel.
     
     Args:
-        movimientos_base: Lista de movimientos base sobrantes
+        movimientos_ingresos_base: Lista de movimientos ingresos base sobrantes
+        movimientos_salidas_base: Lista de movimientos salidas base sobrantes
         movimientos_kerno: Lista de movimientos kerno sobrantes
         ruta_archivo: Ruta donde se guardará el archivo Excel
     
@@ -88,24 +91,21 @@ def exportar_movimientos_sobrantes(movimientos_base, movimientos_kerno, ruta_arc
 
     # Crear un escritor de Excel con múltiples hojas
     with pd.ExcelWriter(ruta_archivo, engine='openpyxl') as writer:
-        # Convertir movimientos base a DataFrame
-        if movimientos_base:
-            df_base = convertir_movimientos_a_dataframe(movimientos_base)
-            df_base.to_excel(writer, sheet_name='Base Sobrantes', index=False)
-        else:
-            # Crear DataFrame vacío con las columnas
-            df_base = pd.DataFrame(columns=['Código', 'Descripción', 'Cantidad', 'Unidad', 
-                                           'Costo Unitario', 'Importe', 'Fecha', 'Movimiento', 'Operación'])
-            df_base.to_excel(writer, sheet_name='Base Sobrantes', index=False)
+        hojas = [
+            ('Ingresos', movimientos_ingresos_base),
+            ('Salidas', movimientos_salidas_base),
+            ('Kerno Sobrantes', movimientos_kerno)
+        ]
+
+        columnas = ['Código', 'Descripción', 'Cantidad', 'Unidad',
+                    'Costo Unitario', 'Importe', 'Fecha', 'Movimiento', 'Operación']
         
-        # Convertir movimientos kerno a DataFrame
-        if movimientos_kerno:
-            df_kerno = convertir_movimientos_a_dataframe(movimientos_kerno)
-            df_kerno.to_excel(writer, sheet_name='Kerno Sobrantes', index=False)
-        else:
-            # Crear DataFrame vacío con las columnas
-            df_kerno = pd.DataFrame(columns=['Código', 'Descripción', 'Cantidad', 'Unidad', 
-                                            'Costo Unitario', 'Importe', 'Fecha', 'Movimiento', 'Operación'])
-            df_kerno.to_excel(writer, sheet_name='Kerno Sobrantes', index=False)
+        # Convertir movimientos ingresos base a DataFrame
+        for nombre, lista in hojas:
+            if lista:
+                df = convertir_movimientos_a_dataframe(lista)
+            else:
+                df = pd.DataFrame(columns=columnas)
+            df.to_excel(writer, sheet_name=nombre, index=False)
     
     return ruta_archivo
