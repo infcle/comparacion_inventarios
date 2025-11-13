@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comparador de Inventarios</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('main.static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>📊 Comparador de Inventarios</h1>
+        <p class="subtitle">Carga tus archivos y descubre las diferencias</p>
+      </header>
+
+      <main>
+        <div class="card">
+          <h2>Carga tus archivos</h2>
+          <form id="uploadForm">
+            <div class="form-group">
+              <label for="ingresos">📥 Archivo Base - INGRESOS (*.xlsx)</label>
+              <input
+                type="file"
+                id="ingresos"
+                name="ingresos"
+                accept=".xlsx,.xls"
+                required
+              />
+              <small>Archivo Excel con hoja "Hoja1"</small>
+            </div>
+
+            <div class="form-group">
+              <label for="salidas">📤 Archivo Base - SALIDAS (*.xlsx)</label>
+              <input
+                type="file"
+                id="salidas"
+                name="salidas"
+                accept=".xlsx,.xls"
+                required
+              />
+              <small>Archivo Excel con hoja "Hoja1"</small>
+            </div>
+
+            <div class="form-group">
+              <label for="kardex">🏷️ Archivo KARDEX Kernobi (*.xlsx)</label>
+              <input
+                type="file"
+                id="kardex"
+                name="kardex"
+                accept=".xlsx,.xls"
+                required
+              />
+              <small>Archivo Excel con hoja "Page 1"</small>
+            </div>
+
+            <div class="form-group">
+              <label for="mes">📅 Mes a Comparar (1-12)</label>
+              <input
+                type="number"
+                id="mes"
+                name="mes"
+                min="1"
+                max="12"
+                required
+              />
+              <small>Ingrese el número del mes</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              🚀 Procesar Archivos
+            </button>
+          </form>
+        </div>
+
+        <div id="loadingSpinner" class="loading-spinner hidden">
+          <div class="spinner"></div>
+          <p>Procesando archivos...</p>
+        </div>
+
+        <div id="resultsCard" class="card results-card hidden">
+          <h2>📈 Resultados</h2>
+          <div id="resultsContent"></div>
+          <div class="download-section">
+            <button id="downloadBtn" class="btn btn-success">
+              ⬇️ Descargar Archivo Excel
+            </button>
+          </div>
+        </div>
+
+        <div id="errorAlert" class="alert alert-error hidden"></div>
+        <div id="successAlert" class="alert alert-success hidden"></div>
+      </main>
+
+      <footer>
+        <p>Comparador de Inventarios © 2025 - v1.0</p>
+      </footer>
+    </div>
+
+    <script src="{{ url_for('main.static', filename='script.js') }}"></script>
+  </body>
+</html>
