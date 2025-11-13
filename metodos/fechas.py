@@ -1,0 +1,3 @@
+
+def verificarFechas(fechaBase, fechaKerno):
+    
