@@ -24,6 +24,7 @@ async function handleFormSubmit(e) {
   const salidasInput = document.getElementById("salidas");
   const kardexInput = document.getElementById("kardex");
   const mesInput = document.getElementById("mes");
+  const toleranciaInput = document.getElementById("tolerancia");
 
   // Validar que se seleccionaron archivos
   if (
@@ -40,12 +41,18 @@ async function handleFormSubmit(e) {
     return;
   }
 
+  if (!toleranciaInput.value) {
+    showError("Por favor, ingresa la tolerancia de diferencia");
+    return;
+  }
+
   // Preparar FormData
   const formData = new FormData();
   formData.append("ingresos", ingresosInput.files[0]);
   formData.append("salidas", salidasInput.files[0]);
   formData.append("kardex", kardexInput.files[0]);
   formData.append("mes", mesInput.value);
+  formData.append("tolerancia", toleranciaInput.value);
 
   // Mostrar spinner de carga
   hideAlerts();

@@ -10,8 +10,23 @@ def comparar_con_unidecode(cadena1, cadena2):
 
 def verificar_igualdad(
     movimiento_kerno, 
-    movimiento_base
+    movimiento_base,
+    tolerancia=0.01
 ):
+    """
+    Verifica si dos movimientos son iguales con tolerancia en costo unitario e importe.
+    
+    Args:
+        movimiento_kerno: Movimiento del Kardex
+        movimiento_base: Movimiento base
+        tolerancia: Porcentaje de tolerancia permitida (0-100)
+    
+    Returns:
+        bool: True si los movimientos son iguales dentro de la tolerancia
+    """
+    # Convertir tolerancia de porcentaje a decimal
+    tolerancia_decimal = tolerancia / 100
+    
     # verificacion fecha
     fechaKerno = movimiento_kerno.getFechaCorta()
     fechaBase = movimiento_base.getFechaCorta()
@@ -32,17 +47,26 @@ def verificar_igualdad(
     if(cantidadBase == cantidadKerno) :
         igualdades += 1
 
-    # Verificacion de costo unitario
+    # Verificacion de costo unitario con tolerancia
     costoUnitarioKerno = movimiento_kerno.getCostoUnitarioDosCifras()
     costoUnitarioBase = movimiento_base.getCostoUnitarioDosCifras()
-    if(costoUnitarioBase == costoUnitarioKerno):
+    
+    if costoUnitarioBase > 0:
+        diferencia_costo = abs(costoUnitarioBase - costoUnitarioKerno) / costoUnitarioBase
+        if diferencia_costo <= tolerancia_decimal:
+            igualdades += 1
+    elif costoUnitarioBase == costoUnitarioKerno:
         igualdades += 1
     
-    # Importe o total
+    # Importe o total con tolerancia
     importeKerno =  movimiento_kerno.getImporteDosCifras()
     importeBase =  movimiento_base.getImporteDosCifras()
 
-    if(importeBase == importeKerno):
+    if importeBase > 0:
+        diferencia_importe = abs(importeBase - importeKerno) / importeBase
+        if diferencia_importe <= tolerancia_decimal:
+            igualdades += 1
+    elif importeBase == importeKerno:
         igualdades += 1
 
     if igualdades == 5 :

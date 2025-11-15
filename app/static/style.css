@@ -103,16 +103,19 @@ label {
 }
 
 input[type="file"],
-input[type="number"] {
+input[type="number"],
+select {
   padding: 12px;
   border: 2px solid var(--light-color);
   border-radius: var(--border-radius);
   font-size: 1em;
   transition: border-color 0.3s ease;
+  font-family: inherit;
 }
 
 input[type="file"]:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+select:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);

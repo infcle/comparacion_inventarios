@@ -24,9 +24,10 @@ ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def comparar_listas_vs_kerno(base_list, kerno_list, tipo, contador):
+def comparar_listas_vs_kerno(base_list, kerno_list, tipo, contador, tolerancia=0.01):
     """
     Compara dos listas de movimientos y marca coincidencias.
+    tolerancia: porcentaje permitido de diferencia (0-100)
     """
     i = len(base_list) - 1
     while i >= 0:
@@ -44,7 +45,8 @@ def comparar_listas_vs_kerno(base_list, kerno_list, tipo, contador):
             item_kerno = kerno_list[j]
             contador['total_comparaciones'] += 1
 
-            if metodos.verificar_igualdad(item_kerno, item_base):
+            # Usar tolerancia en la verificación
+            if metodos.verificar_igualdad(item_kerno, item_base, tolerancia):
                 kerno_list.pop(j)
                 base_list.pop(i)
                 contador['coincidencias'] += 1
@@ -75,11 +77,14 @@ def procesar():
             return jsonify({'error': 'Falta archivo de kardex'}), 400
         if 'mes' not in request.form:
             return jsonify({'error': 'Falta el parámetro mes'}), 400
+        if 'tolerancia' not in request.form:
+            return jsonify({'error': 'Falta el parámetro tolerancia'}), 400
 
         ingresos_file = request.files['ingresos']
         salidas_file = request.files['salidas']
         kardex_file = request.files['kardex']
         mes_str = request.form['mes']
+        tolerancia_str = request.form['tolerancia']
 
         # Validar nombres de archivos
         if ingresos_file.filename == '':
@@ -104,6 +109,14 @@ def procesar():
                 return jsonify({'error': 'El mes debe estar entre 1 y 12'}), 400
         except ValueError:
             return jsonify({'error': 'El mes debe ser un número'}), 400
+
+        # Validar tolerancia
+        try:
+            tolerancia = float(tolerancia_str)
+            if tolerancia < 0 or tolerancia > 100:
+                return jsonify({'error': 'La tolerancia debe estar entre 0 y 100'}), 400
+        except ValueError:
+            return jsonify({'error': 'La tolerancia debe ser un número'}), 400
 
         # Guardar archivos temporales
         upload_folder = current_app.config['UPLOAD_FOLDER']
@@ -134,9 +147,9 @@ def procesar():
 
         contador = {'coincidencias': 0, 'total_comparaciones': 0}
 
-        # Comparar movimientos
-        comparar_listas_vs_kerno(ingresos_trabajo, kerno_trabajo, "INGRESO", contador)
-        comparar_listas_vs_kerno(salidas_trabajo, kerno_trabajo, "SALIDA", contador)
+        # Comparar movimientos con tolerancia
+        comparar_listas_vs_kerno(ingresos_trabajo, kerno_trabajo, "INGRESO", contador, tolerancia)
+        comparar_listas_vs_kerno(salidas_trabajo, kerno_trabajo, "SALIDA", contador, tolerancia)
 
         # Actualizar listas de sobrantes
         movimientos_ingresos_base = ingresos_trabajo
