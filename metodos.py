@@ -23,9 +23,7 @@ def verificar_igualdad(
     
     Returns:
         bool: True si los movimientos son iguales dentro de la tolerancia
-    """
-    # Convertir tolerancia de porcentaje a decimal
-    tolerancia_decimal = tolerancia / 100
+    """    
     
     # verificacion fecha
     fechaKerno = movimiento_kerno.getFechaCorta()
