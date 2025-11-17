@@ -52,8 +52,8 @@ def verificar_igualdad(
     costoUnitarioBase = movimiento_base.getCostoUnitarioDosCifras()
     
     if costoUnitarioBase > 0:
-        diferencia_costo = abs(costoUnitarioBase - costoUnitarioKerno) / costoUnitarioBase
-        if diferencia_costo <= tolerancia_decimal:
+        diferencia_costo = abs(costoUnitarioBase - costoUnitarioKerno)
+        if diferencia_costo <= tolerancia:
             igualdades += 1
     elif costoUnitarioBase == costoUnitarioKerno:
         igualdades += 1
@@ -63,8 +63,8 @@ def verificar_igualdad(
     importeBase =  movimiento_base.getImporteDosCifras()
 
     if importeBase > 0:
-        diferencia_importe = abs(importeBase - importeKerno) / importeBase
-        if diferencia_importe <= tolerancia_decimal:
+        diferencia_importe = abs(importeBase - importeKerno)
+        if diferencia_importe <= tolerancia:
             igualdades += 1
     elif importeBase == importeKerno:
         igualdades += 1
